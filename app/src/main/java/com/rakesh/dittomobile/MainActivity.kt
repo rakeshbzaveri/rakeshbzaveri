@@ -24,26 +24,36 @@ import java.util.Date
 
 class MainActivity : ComponentActivity() {
     private lateinit var store: ClipStore
+    private var resumeRefresh by mutableIntStateOf(0)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         store = ClipStore(this)
-        setContent { DittoScreen(store) }
+        setContent { DittoScreen(store, resumeRefresh) }
     }
+
     override fun onResume() {
         super.onResume()
         try {
             val cm = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-            if (cm.hasPrimaryClip()) cm.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString()?.let { store.add(it) }
-        } catch (_: SecurityException) { } catch (_: Exception) { }
+            if (cm.hasPrimaryClip()) {
+                cm.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString()?.let { store.add(it) }
+            }
+        } catch (_: SecurityException) {
+        } catch (_: Exception) {
+        }
+        // Force the Compose list to reload after the latest clipboard read.
+        resumeRefresh++
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DittoScreen(store: ClipStore) {
+private fun DittoScreen(store: ClipStore, resumeRefresh: Int) {
     val context = LocalContext.current
     var query by remember { mutableStateOf("") }
     var refresh by remember { mutableIntStateOf(0) }
-    val clips = remember(query, refresh) { store.list(query) }
+    val clips = remember(query, refresh, resumeRefresh) { store.list(query) }
     MaterialTheme {
         Scaffold(topBar = {
             TopAppBar(title = { Column { Text("Ditto Mobile", fontWeight = FontWeight.Bold); Text("Your searchable clipboard", style = MaterialTheme.typography.labelSmall) } }, actions = {
