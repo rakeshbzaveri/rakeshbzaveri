@@ -72,6 +72,21 @@ private fun DittoScreen(store: ClipStore, resumeRefresh: Int) {
                     }) { Text("Enable floating button") }
                 }
                 Text("Tip: tap Copy on an entry, then paste normally in your other app.", style = MaterialTheme.typography.bodySmall)
+                Spacer(Modifier.height(6.dp))
+                OutlinedButton(
+                    onClick = {
+                        try {
+                            val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            if (cm.hasPrimaryClip()) {
+                                cm.primaryClip?.getItemAt(0)?.coerceToText(context)?.toString()?.let { store.add(it) }
+                            }
+                        } catch (_: SecurityException) {
+                        } catch (_: Exception) {
+                        }
+                        refresh++
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Import current clipboard") }
                 Spacer(Modifier.height(8.dp))
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(clips, key = { it.id }) { clip ->
